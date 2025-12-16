@@ -16,6 +16,13 @@ build_debug:
 	@-mkdir bin
 	@odin build src -build-mode:exe -debug -out:bin/$(app_name)
 
+shaders: build_compile_shaders
+	@./bin/compile_shaders
+
+build_compile_shaders:
+	@-rm -rf shaders/bin
+	@odin build shaders/compile_shaders -build-mode:exe -out:bin/compile_shaders
+
 sdl:
 	@cmake -S ./vendor/sdl3/src -B ./vendor/sdl3/src/build -DSDL_SHARED=OFF -DSDL_STATIC=ON -DCMAKE_BUILD_TYPE=Release
 	@cmake --build ./vendor/sdl3/src/build --config Release
@@ -34,10 +41,4 @@ sdl_ttf:
 	@-mkdir ./vendor/sdl3/ttf/lib
 	@-cp ./vendor/sdl3/ttf/src/build/libSDL3_ttf.a ./vendor/sdl3/ttf/lib
 
-shaders: build_compile_shaders
-	@./bin/compile_shaders
-
-build_compile_shaders:
-	@-rm -rf shaders/bin
-	@odin build shaders/compile_shaders -build-mode:exe -out:bin/compile_shaders
 
