@@ -64,6 +64,8 @@ initVkContext :: proc() {
 destroyVkContext :: proc() {
 	log.infof("Destroy VkContext")
 
+    vkCheck(vk.DeviceWaitIdle(g_vulkan_context.logic_device.handle))
+
     destroyVkSwapChain()
     destroyVkLogicDevice()
 	vk.DestroySurfaceKHR(

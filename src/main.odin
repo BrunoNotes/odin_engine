@@ -2,6 +2,7 @@ package main
 
 import eng_ctx "./engine"
 import "./engine/base"
+import "./engine/vulkan"
 import "core:log"
 import "core:mem"
 
@@ -16,6 +17,9 @@ main :: proc() {
 	eng_ctx.initEngine()
 	defer eng_ctx.destroyEngine()
 
+    // cornflower blue
+	vulkan.g_vulkan_context.background_color = {0.392, 0.584, 0.929, 1.0}
+
 	// main loop
 	for eng_ctx.running() {
 		defer free_all(context.temp_allocator)
@@ -23,6 +27,9 @@ main :: proc() {
 		eng_ctx.updateEngine()
 
 		// render
+		vulkan.beginVkRendering()
+
+		vulkan.endVkRendering()
 
 		when ODIN_DEBUG {
 			base.checkDoubleFreeTrackingAllocator(tracking_allocator)

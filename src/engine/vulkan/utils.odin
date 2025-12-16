@@ -240,3 +240,85 @@ vkFindMemoryType :: proc(
 
     panic("Vulkan: failed to find suitable memory type")
 }
+
+vkGetPipelineStageAccess :: proc(state: vk.ImageLayout) -> VkPipelineStageAccess {
+    #partial switch state {
+    case .UNDEFINED:
+        return VkPipelineStageAccess{stage = {.TOP_OF_PIPE}, access = {}}
+    case .COLOR_ATTACHMENT_OPTIMAL:
+        return VkPipelineStageAccess {
+            stage = {.COLOR_ATTACHMENT_OUTPUT},
+            access = {.COLOR_ATTACHMENT_READ, .COLOR_ATTACHMENT_WRITE},
+        }
+    case .SHADER_READ_ONLY_OPTIMAL:
+        return VkPipelineStageAccess {
+            stage = {
+                .FRAGMENT_SHADER,
+                .COMPUTE_SHADER,
+                .PRE_RASTERIZATION_SHADERS,
+            },
+            access = {.SHADER_READ},
+        }
+    case .TRANSFER_DST_OPTIMAL:
+        return VkPipelineStageAccess {
+            stage = {.TRANSFER},
+            access = {.TRANSFER_WRITE},
+        }
+    case .GENERAL:
+        return VkPipelineStageAccess {
+            stage = {.COMPUTE_SHADER, .TRANSFER},
+            access = {.MEMORY_READ, .MEMORY_WRITE, .TRANSFER_WRITE},
+        }
+    case .PRESENT_SRC_KHR:
+        return VkPipelineStageAccess {
+            stage = {.COLOR_ATTACHMENT_OUTPUT},
+            access = {},
+        }
+    case:
+        return VkPipelineStageAccess {
+            stage = {.ALL_COMMANDS},
+            access = {.MEMORY_READ, .MEMORY_WRITE},
+        }
+    }
+}
+
+vkTransitionImage :: proc(
+    cmd: vk.CommandBuffer,
+    img: vk.Image,
+    old_layout: vk.ImageLayout,
+    new_layout: vk.ImageLayout,
+    mip_levels: u32 = vk.REMAINING_MIP_LEVELS,
+) {
+    src_stage_access := vkGetPipelineStageAccess(old_layout)
+    dst_stage_access := vkGetPipelineStageAccess(new_layout)
+
+    sub_resource_range := vk.ImageSubresourceRange {
+        aspectMask     = new_layout == vk.ImageLayout.DEPTH_ATTACHMENT_OPTIMAL ? {.DEPTH} : {.COLOR},
+        baseMipLevel   = 0,
+        baseArrayLayer = 0,
+        levelCount     = mip_levels,
+        layerCount     = vk.REMAINING_ARRAY_LAYERS,
+    }
+
+    barrier := vk.ImageMemoryBarrier2 {
+        sType               = vk.StructureType.IMAGE_MEMORY_BARRIER_2,
+        srcStageMask        = src_stage_access.stage,
+        srcAccessMask       = src_stage_access.access,
+        dstStageMask        = dst_stage_access.stage,
+        dstAccessMask       = dst_stage_access.access,
+        oldLayout           = old_layout,
+        newLayout           = new_layout,
+        srcQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
+        dstQueueFamilyIndex = vk.QUEUE_FAMILY_IGNORED,
+        image               = img,
+        subresourceRange    = sub_resource_range,
+    }
+
+    dep_info := vk.DependencyInfo {
+        sType                   = vk.StructureType.DEPENDENCY_INFO,
+        imageMemoryBarrierCount = 1,
+        pImageMemoryBarriers    = &barrier,
+    }
+
+    vk.CmdPipelineBarrier2(cmd, &dep_info)
+}
