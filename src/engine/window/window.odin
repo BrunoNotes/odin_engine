@@ -2,6 +2,7 @@ package window_context
 
 import sdl "../../../vendor/sdl3"
 import "core:log"
+import "core:math/linalg"
 import "core:strings"
 
 g_window_context: WindowContext
@@ -37,4 +38,8 @@ destroyWindow :: proc() {
 	log.infof("Destroy window")
 
 	sdl.DestroyWindow(g_window_context.handle)
+}
+
+getWindowSize :: proc() -> linalg.Vector2f32 {
+	return linalg.Vector2f32{f32(g_window_context.width), f32(g_window_context.height)}
 }

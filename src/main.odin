@@ -1,9 +1,11 @@
 package main
 
+import "../vendor/clay"
 import eng_ctx "./engine"
 import "./engine/base"
 import math_ctx "./engine/math"
 import "./engine/types"
+import "./engine/ui"
 import "./engine/utils"
 import "./engine/vulkan"
 import w_ctx "./engine/window"
@@ -98,6 +100,11 @@ main :: proc() {
 	camera.translation = {0, 0, 2}
 	camera.projection = .perspective
 
+	// ----- UI -----
+	clay_ctx := ui.ClayContext{}
+	ui.clayInit(&clay_ctx, f32(w_ctx.getWindowSize().x), f32(w_ctx.getWindowSize().y))
+	defer ui.destroyClay(&clay_ctx)
+
 	// ----- Main loop -----
 
 	for eng_ctx.running() {
@@ -123,8 +130,8 @@ main :: proc() {
 
 		types.updateCameraProjection(
 			&camera,
-			f32(w_ctx.g_window_context.width),
-			f32(w_ctx.g_window_context.height),
+			f32(w_ctx.getWindowSize().x),
+			f32(w_ctx.getWindowSize().y),
 		)
 
 		vk_camera.uniform.projection = camera.projection_matrix
@@ -132,7 +139,6 @@ main :: proc() {
 
 		// ----- Mesh -----
 		{
-            // mesh controller
 			rotation, translation := eng_ctx.meshController(
 				mesh.rotation,
 				mesh.translation,
@@ -148,6 +154,44 @@ main :: proc() {
 		// ---- Render -----
 		vulkan.beginVkRendering()
 
+		// ----- ui ------
+
+		{
+			mouse_position := w_ctx.getMousePosition()
+			mouse_scroll := w_ctx.getMouseScroll()
+
+			clay.SetLayoutDimensions(
+				{width = w_ctx.getWindowSize().x, height = w_ctx.getWindowSize().y},
+			)
+			clay.SetPointerState(
+				{mouse_position.x, mouse_position.y},
+				w_ctx.isMouseButtonPressed(.LEFT),
+			)
+			clay.UpdateScrollContainers(
+				true,
+				{mouse_scroll.position.x, mouse_scroll.position.y},
+				eng_ctx.deltaTime(),
+			)
+
+			clay.BeginLayout()
+
+			if clay.UI(clay.ID("OuterContainer"))(
+			{
+				layout = {
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
+					padding = clay.PaddingAll(16),
+					childGap = 16,
+				},
+				backgroundColor = {250, 250, 255, 255},
+			},
+			) {
+			}
+			clay_render_cmds := clay.EndLayout()
+
+			ui.clayRender(&clay_ctx, &clay_render_cmds)
+		}
+
+		// ----- draw -----
 		vulkan.renderVkMesh(&vk_mesh, &vk_camera)
 
 		vulkan.endVkRendering()

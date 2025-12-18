@@ -99,8 +99,8 @@ beginVkRendering :: proc() {
 		renderArea = vk.Rect2D {
 			offset = vk.Offset2D{x = 0, y = 0},
 			extent = vk.Extent2D {
-				width = u32(w_ctx.g_window_context.width),
-				height = u32(w_ctx.g_window_context.height),
+				width = u32(w_ctx.getWindowSize().x),
+				height = u32(w_ctx.getWindowSize().y),
 			},
 		},
 		layerCount = 1,

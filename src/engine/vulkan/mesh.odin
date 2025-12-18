@@ -125,9 +125,9 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 
 	viewport := vk.Viewport {
 		x        = 0.0,
-		y        = f32(w_ctx.g_window_context.height),
-		width    = f32(w_ctx.g_window_context.width),
-		height   = -f32(w_ctx.g_window_context.height),
+		y        = f32(w_ctx.getWindowSize().y),
+		width    = f32(w_ctx.getWindowSize().x),
+		height   = -f32(w_ctx.getWindowSize().y),
 		minDepth = 0.0,
 		maxDepth = 1.0,
 	}
@@ -136,8 +136,8 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 
 	scissor := vk.Rect2D {
 		extent = vk.Extent2D {
-			width = u32(w_ctx.g_window_context.width),
-			height = u32(w_ctx.g_window_context.height),
+			width = u32(w_ctx.getWindowSize().x),
+			height = u32(w_ctx.getWindowSize().y),
 		},
 	}
 
