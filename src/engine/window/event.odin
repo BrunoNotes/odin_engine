@@ -1,7 +1,6 @@
 package window_context
 
 import sdl "../../../vendor/sdl3"
-import "core:fmt"
 import "core:math/linalg"
 
 g_mouse_position: linalg.Vector2f32

@@ -27,7 +27,7 @@ initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600
 		{.RESIZABLE, .VULKAN},
 	)
 	if g_window_context.handle == nil {
-		log.fatalf("Error initializing window")
+		log.fatalf("SDL: error initializing window")
 	}
 
 	g_window_context.close = false

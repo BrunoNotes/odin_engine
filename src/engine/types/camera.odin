@@ -49,3 +49,4 @@ updateCameraProjection :: proc(cam: ^Camera, width, height: f32) {
 		cam.projection_matrix = linalg.matrix4_perspective(cam.fov, width / height, 0.1, 1000.0)
 	}
 }
+

@@ -74,7 +74,6 @@ main :: proc() {
 		{.INDEX_BUFFER, .TRANSFER_DST},
 	)
 	vk_mesh.index_count = u32(len(mesh.indices))
-	vk_mesh.push_constant.model_matrix = mesh.model_matrix
 
 	if len(gltf.textures) > 0 {
 		texture_image := vulkan.createVkTextureImageFromStbImage(gltf.textures[0])
@@ -104,7 +103,24 @@ main :: proc() {
 	for eng_ctx.running() {
 		defer free_all(context.temp_allocator)
 
+
 		// ----- Camera -----
+		{
+			// fly camera
+			velocity, pitch, yaw := eng_ctx.flyCameraController(
+				camera.translation,
+				eng_ctx.deltaTime(),
+			)
+			camera.velocity = velocity
+			if w_ctx.isMouseButtonPressed(.RIGHT) {
+				w_ctx.setMouseMode(.Captured)
+				camera.pitch = pitch
+				camera.yaw = yaw
+			} else {
+				w_ctx.setMouseMode(.Normal)
+			}
+		}
+
 		types.updateCameraProjection(
 			&camera,
 			f32(w_ctx.g_window_context.width),
@@ -115,6 +131,18 @@ main :: proc() {
 		vk_camera.uniform.view = camera.view_matrix
 
 		// ----- Mesh -----
+		{
+            // mesh controller
+			rotation, translation := eng_ctx.meshController(
+				mesh.rotation,
+				mesh.translation,
+				eng_ctx.deltaTime(),
+			)
+			mesh.rotation = rotation
+			mesh.translation = translation
+		}
+
+		vk_mesh.push_constant.model_matrix = mesh.model_matrix
 		types.updateMeshProjection(&mesh)
 
 		// ---- Render -----
