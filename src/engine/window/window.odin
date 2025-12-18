@@ -10,15 +10,15 @@ WindowContext :: struct {
 	handle:        ^sdl.Window,
 	title:         string,
 	width, height: i32,
-    close: bool,
+	close:         bool,
 }
 
 initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600) {
 	log.infof("Init window")
 
-    g_window_context.title = title
-    g_window_context.width = width
-    g_window_context.height = height
+	g_window_context.title = title
+	g_window_context.width = width
+	g_window_context.height = height
 
 	g_window_context.handle = sdl.CreateWindow(
 		strings.clone_to_cstring(title, context.temp_allocator),
@@ -30,7 +30,7 @@ initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600
 		log.fatalf("Error initializing window")
 	}
 
-    g_window_context.close = false
+	g_window_context.close = false
 }
 
 destroyWindow :: proc() {

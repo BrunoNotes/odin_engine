@@ -32,21 +32,20 @@ destroyEngine :: proc() {
 }
 
 running :: proc() -> bool {
+	current_time := time.now()._nsec
+	g_engine_context.delta_time = f32(current_time - last_time) / f32(time.Second)
+	last_time = current_time
+
+	w_ctx.processEvents()
+	w_ctx.updateInputState()
+
+	if w_ctx.g_window_context.close {
+		g_engine_context.running = false
+	}
+
 	return g_engine_context.running
 }
 
 deltaTime :: proc() -> f32 {
 	return g_engine_context.delta_time
-}
-
-updateEngine :: proc() {
-	current_time := time.now()._nsec
-	g_engine_context.delta_time = f32(current_time - last_time) / f32(time.Second)
-	last_time = current_time
-
-    w_ctx.processSdlEvents()
-
-    if w_ctx.g_window_context.close {
-        g_engine_context.running = false
-    }
 }

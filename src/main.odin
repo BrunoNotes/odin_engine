@@ -1,6 +1,5 @@
 package main
 
-import "core:encoding/uuid"
 import eng_ctx "./engine"
 import "./engine/base"
 import math_ctx "./engine/math"
@@ -9,6 +8,7 @@ import "./engine/utils"
 import "./engine/vulkan"
 import w_ctx "./engine/window"
 import "core:crypto"
+import "core:encoding/uuid"
 import "core:log"
 import "core:mem"
 import "core:os"
@@ -104,8 +104,6 @@ main :: proc() {
 	for eng_ctx.running() {
 		defer free_all(context.temp_allocator)
 
-		eng_ctx.updateEngine()
-
 		// ----- Camera -----
 		types.updateCameraProjection(
 			&camera,
@@ -117,7 +115,7 @@ main :: proc() {
 		vk_camera.uniform.view = camera.view_matrix
 
 		// ----- Mesh -----
-		types.updateMesh(&mesh)
+		types.updateMeshProjection(&mesh)
 
 		// ---- Render -----
 		vulkan.beginVkRendering()

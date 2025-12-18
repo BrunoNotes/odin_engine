@@ -13,7 +13,7 @@ Mesh :: struct {
 	model_matrix: linalg.Matrix4f32,
 }
 
-updateMesh :: proc(mesh: ^Mesh) {
+updateMeshProjection :: proc(mesh: ^Mesh) {
 	rotation_matrix := math_ctx.quaternionToRotationMatrix(mesh.rotation, math_ctx.VEC3ZERO)
 
 	translation := linalg.matrix4_translate(mesh.translation)
