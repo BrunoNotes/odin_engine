@@ -1,13 +1,22 @@
 package main
 
+import "core:encoding/uuid"
 import eng_ctx "./engine"
 import "./engine/base"
+import math_ctx "./engine/math"
+import "./engine/types"
+import "./engine/utils"
 import "./engine/vulkan"
+import w_ctx "./engine/window"
+import "core:crypto"
 import "core:log"
 import "core:mem"
+import "core:os"
+import vk "vendor:vulkan"
 
 main :: proc() {
 	context.logger = log.create_console_logger()
+	context.random_generator = crypto.random_generator() // for uuid
 
 	when ODIN_DEBUG {
 		tracking_allocator := base.initTrackingAllocator(context.allocator)
@@ -17,17 +26,103 @@ main :: proc() {
 	eng_ctx.initEngine()
 	defer eng_ctx.destroyEngine()
 
-    // cornflower blue
+	// ----- Mesh -----
+	mesh: types.Mesh
+
+	gltf, err := utils.loadGltf("assets/models/BoxTextured.glb")
+	assert(err == nil)
+
+	mesh.name = gltf.surfaces[0].name
+	mesh.vertices = gltf.surfaces[0].vertices
+	mesh.indices = gltf.surfaces[0].indices
+	mesh.translation = gltf.surfaces[0].translation
+	mesh.scale = gltf.surfaces[0].scale
+	mesh.rotation = gltf.surfaces[0].rotation
+	mesh.model_matrix = math_ctx.MAT4IDENTITY
+
+	// fmt.printfln("%#v", mesh)
+
+	// cornflower blue
 	vulkan.g_vulkan_context.background_color = {0.392, 0.584, 0.929, 1.0}
 
-	// main loop
+	vertex_shader, _ := os.read_entire_file_from_filename(
+		"shaders/bin/mesh.vert.spv",
+		// context.temp_allocator,
+	)
+
+	fragment_shader, _ := os.read_entire_file_from_filename(
+		"shaders/bin/mesh.frag.spv",
+		// context.temp_allocator,
+	)
+	shaders := []vulkan.VkShaderStageType {
+		{shader = vertex_shader, stage = .VERTEX},
+		{shader = fragment_shader, stage = .FRAGMENT},
+	}
+
+	vk_mesh: vulkan.VkMesh
+
+	vk_mesh.vertex_buffer = vulkan.allocateVkBuffer(
+	vk.DeviceSize(size_of(types.Vertex) * len(mesh.vertices)),
+	raw_data(mesh.vertices[:]),
+	{.VERTEX_BUFFER, .TRANSFER_DST, .TRANSFER_SRC},
+	// {.STORAGE_BUFFER, .TRANSFER_DST, .SHADER_DEVICE_ADDRESS},
+	// get_device_address = true,
+	)
+	vk_mesh.index_buffer = vulkan.allocateVkBuffer(
+		vk.DeviceSize(size_of(u32) * len(mesh.indices)),
+		raw_data(mesh.indices[:]),
+		{.INDEX_BUFFER, .TRANSFER_DST},
+	)
+	vk_mesh.index_count = u32(len(mesh.indices))
+	vk_mesh.push_constant.model_matrix = mesh.model_matrix
+
+	if len(gltf.textures) > 0 {
+		texture_image := vulkan.createVkTextureImageFromStbImage(gltf.textures[0])
+		texture_id, _ := uuid.to_string(texture_image.id)
+		vk_mesh.texture.texture_images[texture_id] = texture_image
+	}
+
+	// needs to be created before the mesh
+	vk_camera: vulkan.VkCamera
+	vulkan.initVkCamera(&vk_camera)
+	defer vulkan.destroyVkCamera(&vk_camera)
+
+	vk_mesh.pipeline.wireframe = false
+	vk_mesh.pipeline.blending = .none
+	vulkan.initVkMesh(&vk_mesh, shaders)
+	defer vulkan.destroyVkMesh(&vk_mesh)
+
+	// ----- Camera -----
+
+	camera: types.Camera
+	camera.fov = 70
+	camera.translation = {0, 0, 2}
+	camera.projection = .perspective
+
+	// ----- Main loop -----
+
 	for eng_ctx.running() {
 		defer free_all(context.temp_allocator)
 
 		eng_ctx.updateEngine()
 
-		// render
+		// ----- Camera -----
+		types.updateCameraProjection(
+			&camera,
+			f32(w_ctx.g_window_context.width),
+			f32(w_ctx.g_window_context.height),
+		)
+
+		vk_camera.uniform.projection = camera.projection_matrix
+		vk_camera.uniform.view = camera.view_matrix
+
+		// ----- Mesh -----
+		types.updateMesh(&mesh)
+
+		// ---- Render -----
 		vulkan.beginVkRendering()
+
+		vulkan.renderVkMesh(&vk_mesh, &vk_camera)
 
 		vulkan.endVkRendering()
 

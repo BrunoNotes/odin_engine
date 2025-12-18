@@ -10,6 +10,7 @@ WindowContext :: struct {
 	handle:        ^sdl.Window,
 	title:         string,
 	width, height: i32,
+    close: bool,
 }
 
 initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600) {
@@ -28,6 +29,8 @@ initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600
 	if g_window_context.handle == nil {
 		log.fatalf("Error initializing window")
 	}
+
+    g_window_context.close = false
 }
 
 destroyWindow :: proc() {

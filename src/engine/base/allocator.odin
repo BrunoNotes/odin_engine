@@ -25,8 +25,7 @@ resetTrackingAllocator :: proc(a: ^mem.Tracking_Allocator) -> bool {
 	err := false
 
 	for _, value in a.allocation_map {
-		// fmt.printf("%v: Leaked %v bytes\n", value.location, value.size)
-		log.errorf("%v: Leaked %v bytes\n", value.location, value.size)
+		log.warnf("%v: Leaked %v bytes\n", value.location, value.size)
 		err = true
 	}
 
