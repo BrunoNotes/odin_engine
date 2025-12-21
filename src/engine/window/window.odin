@@ -1,9 +1,13 @@
 package window_context
 
 import sdl "../../../vendor/sdl3"
+import "base:runtime"
 import "core:log"
 import "core:math/linalg"
 import "core:strings"
+
+@(private)
+default_ctx: runtime.Context
 
 g_window_context: WindowContext
 
@@ -16,6 +20,38 @@ WindowContext :: struct {
 
 initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600) {
 	log.infof("Init window")
+
+	// sdl.SetLogPriorities(ODIN_DEBUG ? .VERBOSE : .INFO)
+	// sdl.SetLogOutputFunction(
+	// 	proc "c" (
+	// 		userdata: rawptr,
+	// 		category: sdl.LogCategory,
+	// 		priority: sdl.LogPriority,
+	// 		message: cstring,
+	// 	) {
+	// 		context = default_ctx
+	//
+	// 		switch priority {
+	// 		case .INVALID:
+	// 			log.errorf("SDL: {} [{}]: {}", category, priority, message)
+	// 		case .TRACE:
+	// 			log.errorf("SDL: {} [{}]: {}", category, priority, message)
+	// 		case .VERBOSE:
+	// 			log.infof("SDL: {} [{}]: {}", category, priority, message)
+	// 		case .DEBUG:
+	// 			log.debugf("SDL: {} [{}]: {}", category, priority, message)
+	// 		case .INFO:
+	// 			log.infof("SDL: {} [{}]: {}", category, priority, message)
+	// 		case .WARN:
+	// 			log.warnf("SDL: {} [{}]: {}", category, priority, message)
+	// 		case .ERROR:
+	// 			log.errorf("SDL: {} [{}]: {}", category, priority, message)
+	// 		case .CRITICAL:
+	// 			log.errorf("SDL: {} [{}]: {}", category, priority, message)
+	// 		}
+	// 	},
+	// 	nil,
+	// )
 
 	g_window_context.title = title
 	g_window_context.width = width

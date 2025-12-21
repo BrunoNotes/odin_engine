@@ -130,7 +130,7 @@ createVkTextureImageFromImageByte :: proc(
 	tex_img: VkTextureImage
 	initVkTextureImage(&tex_img, u32(img.width), u32(img.height), u32(img.channels), img.data)
 
-	utils.freeImage(img)
+	utils.freeStbImage(img)
 
 	return tex_img
 }
@@ -144,7 +144,7 @@ createVkTextureImageFromImageFile :: proc(
 	tex_img: VkTextureImage
 	initVkTextureImage(&tex_img, u32(img.width), u32(img.height), u32(img.channels), img.data)
 
-	utils.freeImage(img)
+	utils.freeStbImage(img)
 
 	return tex_img
 }
@@ -156,7 +156,7 @@ createVkTextureImageFromStbImage :: proc(
 	tex_img: VkTextureImage
 	initVkTextureImage(&tex_img, u32(img.width), u32(img.height), u32(img.channels), img.data)
 
-	utils.freeImage(img)
+	utils.freeStbImage(img)
 
 	return tex_img
 }

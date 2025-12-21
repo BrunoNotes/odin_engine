@@ -78,6 +78,6 @@ loadStbImageFile :: proc(file_path: string, allocator := context.allocator) -> S
 	return img
 }
 
-freeImage :: proc(img: StbImage) {
+freeStbImage :: proc(img: StbImage) {
 	stbi.image_free(img.data)
 }

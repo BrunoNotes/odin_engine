@@ -6,28 +6,32 @@ import "core:log"
 import "core:math/linalg"
 import vk "vendor:vulkan"
 
-VkMesh :: struct {
+VkGeometry :: struct {
 	// shaders:           []VkShaderStageType,
 	shader_stages:     VkShaderStages,
 	vertex_descriptor: VkDescriptor,
 	vertex_buffer:     VkBuffer,
 	index_buffer:      VkBuffer,
 	index_count:       u32,
-	push_constant:     VkMeshPushConstant,
+	push_constant:     VkGeometryPushConstant,
 	texture:           VkTexture,
 	pipeline:          VkPipeline,
 	// camera:            VkCamera,
 	loaded:            bool,
 }
 
-VkMeshPushConstant :: struct {
+VkGeometryPushConstant :: struct {
 	model_matrix: linalg.Matrix4f32,
 }
 
-initVkMesh :: proc(mesh: ^VkMesh, shaders: []VkShaderStageType, allocator := context.allocator) {
-	defer mesh.loaded = true
+initVkGeometry :: proc(
+	geometry: ^VkGeometry,
+	shaders: []VkShaderStageType,
+	allocator := context.allocator,
+) {
+	defer geometry.loaded = true
 
-	initVkShaderStage(&mesh.shader_stages, shaders, allocator)
+	initVkShaderStage(&geometry.shader_stages, shaders, allocator)
 
 	push_constant_range := []vk.PushConstantRange {
 		vk.PushConstantRange {
@@ -54,17 +58,17 @@ initVkMesh :: proc(mesh: ^VkMesh, shaders: []VkShaderStageType, allocator := con
 	}
 
 	initVkDescriptor(
-		&mesh.vertex_descriptor,
+		&geometry.vertex_descriptor,
 		u32(len(g_vulkan_context.swapchain.images)),
 		vertex_descriptor_pool_size,
 		vertex_descriptor_layout_binding,
 	)
 
-	initVkTexture(&mesh.texture, allocator)
+	initVkTexture(&geometry.texture, allocator)
 
 	descritor_set_layouts := []vk.DescriptorSetLayout {
-		mesh.vertex_descriptor.set_layout,
-		mesh.texture.descriptor.set_layout,
+		geometry.vertex_descriptor.set_layout,
+		geometry.texture.descriptor.set_layout,
 	}
 
 	attribute_descriptions := []vk.VertexInputAttributeDescription {
@@ -95,29 +99,29 @@ initVkMesh :: proc(mesh: ^VkMesh, shaders: []VkShaderStageType, allocator := con
 	}
 
 	initPipeline(
-		&mesh.pipeline,
-		mesh.shader_stages,
+		&geometry.pipeline,
+		geometry.shader_stages,
 		push_constant_range,
 		descritor_set_layouts,
 		attribute_descriptions,
 	)
 }
 
-destroyVkMesh :: proc(mesh: ^VkMesh) {
-	log.infof("Vulkan: destroy mesh")
+destroyVkGeometry :: proc(geometry: ^VkGeometry) {
+	log.infof("Vulkan: destroy geometry")
 	vkCheck(vk.QueueWaitIdle(g_vulkan_context.logic_device.graphics_queue.queue))
 
-	destroyVkBuffer(&mesh.index_buffer)
-	destroyVkBuffer(&mesh.vertex_buffer)
-	destroyVkPipeline(&mesh.pipeline)
-	destroyVkTexture(&mesh.texture)
-	destroyVkDescriptor(&mesh.vertex_descriptor)
-	destroyVkShaderStage(mesh.shader_stages)
+	destroyVkBuffer(&geometry.index_buffer)
+	destroyVkBuffer(&geometry.vertex_buffer)
+	destroyVkPipeline(&geometry.pipeline)
+	destroyVkTexture(&geometry.texture)
+	destroyVkDescriptor(&geometry.vertex_descriptor)
+	destroyVkShaderStage(geometry.shader_stages)
 
-	mesh.loaded = false
+	geometry.loaded = false
 }
 
-renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
+renderVkGeometry :: proc(geometry: ^VkGeometry, camera: ^VkCamera) {
 	current_frame :=
 		g_vulkan_context.swapchain.frame_data[g_vulkan_context.swapchain.current_frame]
 	cmd := current_frame.cmd_buffer
@@ -147,7 +151,7 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 	vk.CmdSetFrontFace(cmd, .CLOCKWISE)
 	vk.CmdSetPrimitiveTopology(cmd, .TRIANGLE_LIST)
 
-	vk.CmdBindPipeline(cmd, .GRAPHICS, mesh.pipeline.handle)
+	vk.CmdBindPipeline(cmd, .GRAPHICS, geometry.pipeline.handle)
 
 	{
 		size := camera.buffer.info.size
@@ -161,13 +165,13 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 
 	{
 		// TODO: check if this needs to be updated every frame
-		size := mesh.texture.buffer.info.size
+		size := geometry.texture.buffer.info.size
 		staging_buffer := vkInitStagingBuffer(size)
 		defer destroyVkBuffer(&staging_buffer)
 
-		vkMapBufferMemory(&staging_buffer, &mesh.texture.uniform, size)
+		vkMapBufferMemory(&staging_buffer, &geometry.texture.uniform, size)
 
-		copyVkBuffer(staging_buffer.handle, mesh.texture.buffer.handle, 0, 0, size)
+		copyVkBuffer(staging_buffer.handle, geometry.texture.buffer.handle, 0, 0, size)
 	}
 
 	vertex_buffer_info := vk.DescriptorBufferInfo {
@@ -177,28 +181,28 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 	}
 
 	texture_buffer_info := vk.DescriptorBufferInfo {
-		buffer = mesh.texture.buffer.handle,
+		buffer = geometry.texture.buffer.handle,
 		offset = 0,
-		range  = size_of(mesh.texture.uniform),
+		range  = size_of(geometry.texture.uniform),
 	}
 
-	if len(mesh.texture.current_image) <= 0 {
-		for key, _ in mesh.texture.texture_images {
-			mesh.texture.current_image = key
+	if len(geometry.texture.current_image) <= 0 {
+		for key, _ in geometry.texture.texture_images {
+			geometry.texture.current_image = key
 			break
 		}
 	}
 
 	img_info := vk.DescriptorImageInfo {
 		imageLayout = .READ_ONLY_OPTIMAL,
-		imageView   = mesh.texture.texture_images[mesh.texture.current_image].image.view,
-		sampler     = mesh.texture.texture_images[mesh.texture.current_image].sampler,
+		imageView   = geometry.texture.texture_images[geometry.texture.current_image].image.view,
+		sampler     = geometry.texture.texture_images[geometry.texture.current_image].sampler,
 	}
 
 	descriptor_write := []vk.WriteDescriptorSet {
 		{
 			sType = .WRITE_DESCRIPTOR_SET,
-			dstSet = mesh.vertex_descriptor.set,
+			dstSet = geometry.vertex_descriptor.set,
 			dstBinding = 0,
 			dstArrayElement = 0,
 			descriptorType = .UNIFORM_BUFFER,
@@ -207,7 +211,7 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 		},
 		{
 			sType = .WRITE_DESCRIPTOR_SET,
-			dstSet = mesh.texture.descriptor.set,
+			dstSet = geometry.texture.descriptor.set,
 			dstBinding = 0,
 			dstArrayElement = 0,
 			descriptorType = .UNIFORM_BUFFER,
@@ -216,7 +220,7 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 		},
 		{
 			sType           = .WRITE_DESCRIPTOR_SET,
-			dstSet          = mesh.texture.descriptor.set,
+			dstSet          = geometry.texture.descriptor.set,
 			// dstBinding      = model.texture.texture_images[current_image_name].descriptor_binding,
 			dstBinding      = 1,
 			descriptorType  = .COMBINED_IMAGE_SAMPLER,
@@ -225,7 +229,10 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 		},
 	}
 
-	descriptors_sets := []vk.DescriptorSet{mesh.vertex_descriptor.set, mesh.texture.descriptor.set}
+	descriptors_sets := []vk.DescriptorSet {
+		geometry.vertex_descriptor.set,
+		geometry.texture.descriptor.set,
+	}
 
 	vk.UpdateDescriptorSets(
 		g_vulkan_context.logic_device.handle,
@@ -238,7 +245,7 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 	vk.CmdBindDescriptorSets(
 		cmd,
 		.GRAPHICS,
-		mesh.pipeline.layout,
+		geometry.pipeline.layout,
 		0,
 		u32(len(descriptors_sets)),
 		raw_data(descriptors_sets),
@@ -247,18 +254,18 @@ renderVkMesh :: proc(mesh: ^VkMesh, camera: ^VkCamera) {
 	)
 
 	offset: vk.DeviceSize = 0
-	vk.CmdBindVertexBuffers(cmd, 0, 1, &mesh.vertex_buffer.handle, &offset)
-	vk.CmdBindIndexBuffer(cmd, mesh.index_buffer.handle, offset, .UINT32)
+	vk.CmdBindVertexBuffers(cmd, 0, 1, &geometry.vertex_buffer.handle, &offset)
+	vk.CmdBindIndexBuffer(cmd, geometry.index_buffer.handle, offset, .UINT32)
 
 	vk.CmdPushConstants(
 		cmd,
-		mesh.pipeline.layout,
+		geometry.pipeline.layout,
 		{.VERTEX},
 		0,
-		size_of(type_of(mesh.push_constant)),
-		&mesh.push_constant,
+		size_of(type_of(geometry.push_constant)),
+		&geometry.push_constant,
 	)
 
-	vk.CmdDrawIndexed(cmd, mesh.index_count, 1, 0, 0, 0)
+	vk.CmdDrawIndexed(cmd, geometry.index_count, 1, 0, 0, 0)
 	// vk.CmdDraw(cmd, u32(len(model.vertices)), 1, 0, 0)
 }

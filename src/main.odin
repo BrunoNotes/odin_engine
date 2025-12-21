@@ -3,18 +3,13 @@ package main
 import "../vendor/clay"
 import eng_ctx "./engine"
 import "./engine/base"
-import math_ctx "./engine/math"
 import "./engine/types"
 import "./engine/ui"
-import "./engine/utils"
 import "./engine/vulkan"
 import w_ctx "./engine/window"
 import "core:crypto"
-import "core:encoding/uuid"
 import "core:log"
 import "core:mem"
-import "core:os"
-import vk "vendor:vulkan"
 
 main :: proc() {
 	context.logger = log.create_console_logger()
@@ -28,70 +23,23 @@ main :: proc() {
 	eng_ctx.initEngine()
 	defer eng_ctx.destroyEngine()
 
-	// ----- Mesh -----
-	mesh: types.Mesh
-
-	gltf, err := utils.loadGltf("assets/models/BoxTextured.glb")
-	assert(err == nil)
-
-	mesh.name = gltf.surfaces[0].name
-	mesh.vertices = gltf.surfaces[0].vertices
-	mesh.indices = gltf.surfaces[0].indices
-	mesh.translation = gltf.surfaces[0].translation
-	mesh.scale = gltf.surfaces[0].scale
-	mesh.rotation = gltf.surfaces[0].rotation
-	mesh.model_matrix = math_ctx.MAT4IDENTITY
-
-	// fmt.printfln("%#v", mesh)
-
 	// cornflower blue
 	vulkan.g_vulkan_context.background_color = {0.392, 0.584, 0.929, 1.0}
 
-	vertex_shader, _ := os.read_entire_file_from_filename(
-		"shaders/bin/mesh.vert.spv",
-		// context.temp_allocator,
-	)
-
-	fragment_shader, _ := os.read_entire_file_from_filename(
-		"shaders/bin/mesh.frag.spv",
-		// context.temp_allocator,
-	)
-	shaders := []vulkan.VkShaderStageType {
-		{shader = vertex_shader, stage = .VERTEX},
-		{shader = fragment_shader, stage = .FRAGMENT},
-	}
-
-	vk_mesh: vulkan.VkMesh
-
-	vk_mesh.vertex_buffer = vulkan.allocateVkBuffer(
-	vk.DeviceSize(size_of(types.Vertex) * len(mesh.vertices)),
-	raw_data(mesh.vertices[:]),
-	{.VERTEX_BUFFER, .TRANSFER_DST, .TRANSFER_SRC},
-	// {.STORAGE_BUFFER, .TRANSFER_DST, .SHADER_DEVICE_ADDRESS},
-	// get_device_address = true,
-	)
-	vk_mesh.index_buffer = vulkan.allocateVkBuffer(
-		vk.DeviceSize(size_of(u32) * len(mesh.indices)),
-		raw_data(mesh.indices[:]),
-		{.INDEX_BUFFER, .TRANSFER_DST},
-	)
-	vk_mesh.index_count = u32(len(mesh.indices))
-
-	if len(gltf.textures) > 0 {
-		texture_image := vulkan.createVkTextureImageFromStbImage(gltf.textures[0])
-		texture_id, _ := uuid.to_string(texture_image.id)
-		vk_mesh.texture.texture_images[texture_id] = texture_image
-	}
 
 	// needs to be created before the mesh
 	vk_camera: vulkan.VkCamera
 	vulkan.initVkCamera(&vk_camera)
 	defer vulkan.destroyVkCamera(&vk_camera)
 
-	vk_mesh.pipeline.wireframe = false
-	vk_mesh.pipeline.blending = .none
-	vulkan.initVkMesh(&vk_mesh, shaders)
-	defer vulkan.destroyVkMesh(&vk_mesh)
+	vk_render_objects := vulkan.initVkRenderObjectsFromGltfFile(
+		// "assets/models/BoxTextured.glb",
+        // "/home/bruno/tmp/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf",
+        // "/home/bruno/tmp/glTF-Sample-Models/2.0/Lantern/glTF-Binary/Lantern.glb",
+        "/home/bruno/tmp/glTF-Sample-Models/2.0/Suzanne/glTF/Suzanne.gltf",
+		vk_camera,
+	)
+	defer vulkan.destroyVkRenderObjectsSlice(&vk_render_objects)
 
 	// ----- Camera -----
 
@@ -138,18 +86,6 @@ main :: proc() {
 		vk_camera.uniform.view = camera.view_matrix
 
 		// ----- Mesh -----
-		{
-			rotation, translation := eng_ctx.meshController(
-				mesh.rotation,
-				mesh.translation,
-				eng_ctx.deltaTime(),
-			)
-			mesh.rotation = rotation
-			mesh.translation = translation
-		}
-
-		vk_mesh.push_constant.model_matrix = mesh.model_matrix
-		types.updateMeshProjection(&mesh)
 
 		// ---- Render -----
 		vulkan.beginVkRendering()
@@ -192,7 +128,23 @@ main :: proc() {
 		}
 
 		// ----- draw -----
-		vulkan.renderVkMesh(&vk_mesh, &vk_camera)
+		for &render_object in vk_render_objects {
+			{
+				rotation, translation := eng_ctx.geometryController(
+					render_object.geometry.rotation,
+					render_object.geometry.translation,
+					eng_ctx.deltaTime(),
+				)
+				render_object.geometry.rotation = rotation
+				render_object.geometry.translation = translation
+			}
+
+			for &vk_geometry in render_object.vk_geometry {
+				vk_geometry.push_constant.model_matrix = render_object.geometry.model_matrix
+				types.updateGeometryProjection(&render_object.geometry)
+				vulkan.renderVkGeometry(&vk_geometry, &vk_camera)
+			}
+		}
 
 		vulkan.endVkRendering()
 

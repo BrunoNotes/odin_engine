@@ -56,16 +56,15 @@ flyCameraController :: proc(
 }
 
 // TODO: temp
-meshController :: proc(
-	mesh_rotation: linalg.Quaternionf32,
-	mesh_translation: linalg.Vector3f32,
+geometryController :: proc(
+	geometry_rotation: linalg.Quaternionf32,
+	geometry_translation: linalg.Vector3f32,
 	delta_time: f32,
 ) -> (
 	linalg.Quaternionf32,
 	linalg.Vector3f32,
 ) {
 	rotation_direction: linalg.Vector2f32
-	// rotation_direction := mesh_rotation
 	if w_ctx.isKeyPressed(.P) {
 		rotation_direction += math_ctx.VEC2UP
 	}
@@ -83,7 +82,7 @@ meshController :: proc(
 		rotation_direction == 0 ? rotation_direction : linalg.normalize(rotation_direction) // normalize
 	rotation_vector := rotation_direction * delta_time
 
-	rotation := mesh_rotation
+	rotation := geometry_rotation
 	rotation *= math_ctx.quaternionFromAxisAngle(math_ctx.VEC3UP, rotation_vector.x)
 	rotation *= math_ctx.quaternionFromAxisAngle(math_ctx.VEC3LEFT, rotation_vector.y)
 
@@ -103,7 +102,7 @@ meshController :: proc(
 	}
 
 	direction = direction == 0 ? direction : linalg.normalize(direction) // normalize
-	translation := mesh_translation + (direction * delta_time)
+	translation := geometry_translation + (direction * delta_time)
 
 	return rotation, translation
 }
