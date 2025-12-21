@@ -118,7 +118,6 @@ destroyVkTexture :: proc(texture: ^VkTexture) {
 createVkTextureImageFromImage :: proc {
 	createVkTextureImageFromImageByte,
 	createVkTextureImageFromImageFile,
-	createVkTextureImageFromStbImage,
 }
 
 createVkTextureImageFromImageByte :: proc(
@@ -141,18 +140,6 @@ createVkTextureImageFromImageFile :: proc(
 ) -> VkTextureImage {
 	img := utils.loadStbImage(image_path)
 
-	tex_img: VkTextureImage
-	initVkTextureImage(&tex_img, u32(img.width), u32(img.height), u32(img.channels), img.data)
-
-	utils.freeStbImage(img)
-
-	return tex_img
-}
-
-createVkTextureImageFromStbImage :: proc(
-	img: utils.StbImage,
-	allocator := context.allocator,
-) -> VkTextureImage {
 	tex_img: VkTextureImage
 	initVkTextureImage(&tex_img, u32(img.width), u32(img.height), u32(img.channels), img.data)
 
