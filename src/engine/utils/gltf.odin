@@ -286,6 +286,7 @@ processGltfMesh :: proc(
 				}
 			}
 
+
 			if uv_accessor != nil {
 				assert(uv_accessor.type == .vec2, "Gltf: uv acessor type is not a vec2")
 
@@ -354,6 +355,8 @@ processGltfMesh :: proc(
 
 				texture := prim.material.pbr_metallic_roughness.base_color_texture.texture
 
+                fmt.println(prim.material.pbr_metallic_roughness)
+
 				if texture.image_.buffer_view != nil {
 					start := texture.image_.buffer_view.offset
 					// end := start + texture.image_.buffer_view.size
@@ -381,6 +384,7 @@ processGltfMesh :: proc(
 
 				tmp_gltf_primitive.metallic_roughness.base_color =
 					prim.material.pbr_metallic_roughness.base_color_factor
+
 
 			} else if prim.material.has_pbr_specular_glossiness {
 				fmt.printfln("%#v", prim.material.pbr_specular_glossiness)

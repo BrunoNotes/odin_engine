@@ -28,20 +28,22 @@ main :: proc() {
 	vulkan.g_vulkan_context.background_color = {0.392, 0.584, 0.929, 1.0}
 
 	// needs to be created before the mesh
-	vk_camera: vulkan.VkCamera
-	vulkan.initVkCamera(&vk_camera)
-	defer vulkan.destroyVkCamera(&vk_camera)
+	vk_scene: vulkan.VkScene
+	vk_scene.uniform.ambient_color = 1
+	vulkan.initVkScene(&vk_scene)
+	defer vulkan.destroyVkScene(&vk_scene)
 
 
 	// utils.loadGltf("/home/bruno/tmp/glTF-Sample-Models/2.0/Lantern/glTF-Binary/Lantern.glb")
 	// utils.loadGltf("assets/models/BoxTextured.glb")
 
 	vk_render_objects := vulkan.initVkRenderObjectsFromGltfFile(
-		// "assets/models/BoxTextured.glb",
-		"/home/bruno/tmp/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf",
+		"/home/bruno/Downloads/Untitled.glb",
 		// "/home/bruno/tmp/glTF-Sample-Models/2.0/Lantern/glTF-Binary/Lantern.glb",
+		// "assets/models/BoxTextured.glb",
+		// "/home/bruno/tmp/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf",
 		// "/home/bruno/tmp/glTF-Sample-Models/2.0/Suzanne/glTF/Suzanne.gltf",
-		vk_camera,
+		vk_scene,
 	)
 	defer vulkan.destroyVkRenderObjectsSlice(&vk_render_objects)
 
@@ -61,7 +63,6 @@ main :: proc() {
 
 	for eng_ctx.running() {
 		defer free_all(context.temp_allocator)
-
 
 		// ----- Camera -----
 		{
@@ -86,10 +87,9 @@ main :: proc() {
 			f32(w_ctx.getWindowSize().y),
 		)
 
-		vk_camera.uniform.projection = camera.projection_matrix
-		vk_camera.uniform.view = camera.view_matrix
+		vk_scene.uniform.projection = camera.projection_matrix
+		vk_scene.uniform.view = camera.view_matrix
 
-		// ----- Mesh -----
 
 		// ---- Render -----
 		vulkan.beginVkRendering()
@@ -143,10 +143,11 @@ main :: proc() {
 				render_object.geometry.translation = translation
 			}
 
+
 			for &vk_geometry in render_object.vk_geometry {
 				types.updateGeometryProjection(&render_object.geometry)
 				vk_geometry.push_constant.model_matrix = render_object.geometry.model_matrix
-				vulkan.renderVkGeometry(&vk_geometry, &vk_camera)
+				vulkan.renderVkGeometry(&vk_geometry, &vk_scene)
 			}
 		}
 

@@ -70,7 +70,13 @@ beginVkRendering :: proc() {
 
 	vkTransitionImage(cmd, current_img.handle, .UNDEFINED, .COLOR_ATTACHMENT_OPTIMAL)
 
-	vkTransitionImage(cmd, current_depth_img.handle, .UNDEFINED, .DEPTH_ATTACHMENT_OPTIMAL)
+	vkTransitionImage(
+		cmd,
+		current_depth_img.handle,
+		.UNDEFINED,
+		.DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		current_depth_img.format,
+	)
 
 	color_attachment := [?]vk.RenderingAttachmentInfo {
 		{
@@ -91,7 +97,7 @@ beginVkRendering :: proc() {
 		imageLayout = .DEPTH_ATTACHMENT_OPTIMAL,
 		loadOp = .CLEAR,
 		storeOp = .STORE,
-		clearValue = {depthStencil = {depth = 0}},
+		clearValue = {depthStencil = {depth = 1, stencil = 0}},
 	}
 
 	rendering_info := vk.RenderingInfo {

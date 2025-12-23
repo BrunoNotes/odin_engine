@@ -159,6 +159,7 @@ initVkSwapChain :: proc() {
 		img_count,
 		g_vulkan_context.arena_allocator,
 	)
+
 	g_vulkan_context.swapchain.depth_images = make(
 		[]VkImage,
 		img_count,
@@ -187,12 +188,19 @@ initVkSwapChain :: proc() {
 		{
 			g_vulkan_context.swapchain.depth_images[i].extent =
 				g_vulkan_context.swapchain.images[i].extent
+
+			depth_format := findSupportedFormat(
+				{.D32_SFLOAT, .D32_SFLOAT_S8_UINT, .D24_UNORM_S8_UINT},
+				.OPTIMAL,
+				{.DEPTH_STENCIL_ATTACHMENT},
+			)
+
 			createVkImage(
 				&g_vulkan_context.swapchain.depth_images[i],
 				u32(w_ctx.getWindowSize().x),
 				u32(w_ctx.getWindowSize().y),
 				1,
-				.D32_SFLOAT,
+				depth_format,
 				.OPTIMAL,
 				{.DEPTH_STENCIL_ATTACHMENT},
 				{.DEVICE_LOCAL},
@@ -200,7 +208,7 @@ initVkSwapChain :: proc() {
 
 			g_vulkan_context.swapchain.depth_images[i].view = createVkImageView(
 				g_vulkan_context.swapchain.depth_images[i].handle,
-				.D32_SFLOAT,
+				g_vulkan_context.swapchain.depth_images[i].format,
 				{.DEPTH},
 				1,
 			)

@@ -12,6 +12,8 @@ layout(set = 1, binding = 0) uniform local_uniform_object {
 layout(set = 1, binding = 1) uniform sampler2D diffuse_sampler;
 
 void main() {
-    out_color = in_color * (u_obj.diffuse_color * texture(diffuse_sampler, in_uv));
+    vec4 color = in_color * (u_obj.diffuse_color * texture(diffuse_sampler, in_uv));
+
+    out_color = color;
     // out_color = in_color;
 }

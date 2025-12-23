@@ -3,17 +3,20 @@ package vulkan_context
 import "core:math/linalg"
 import vk "vendor:vulkan"
 
-VkCamera :: struct {
-	uniform: VkCameraUniform,
+VkScene :: struct {
+	uniform: kkSceneUniform,
 	buffer:  VkBuffer,
 }
 
-VkCameraUniform :: struct {
-	projection: linalg.Matrix4f32,
-	view:       linalg.Matrix4f32,
+kkSceneUniform :: struct {
+	projection:         linalg.Matrix4f32,
+	view:               linalg.Matrix4f32,
+	ambient_color:      linalg.Vector4f32,
+	sunlight_direction: linalg.Vector4f32,
+	sunlight_color:     linalg.Vector4f32,
 }
 
-initVkCamera :: proc(camera: ^VkCamera) {
+initVkScene :: proc(camera: ^VkScene) {
 	initVkBuffer(
 		&camera.buffer,
 		vk.DeviceSize(size_of(camera.uniform)),
@@ -21,6 +24,7 @@ initVkCamera :: proc(camera: ^VkCamera) {
 		{.DEVICE_LOCAL},
 	)
 }
-destroyVkCamera :: proc(camera: ^VkCamera) {
+
+destroyVkScene :: proc(camera: ^VkScene) {
 	destroyVkBuffer(&camera.buffer)
 }

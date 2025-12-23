@@ -7,6 +7,7 @@ VkImage :: struct {
 	view:   vk.ImageView,
 	extent: vk.Extent2D,
 	memory: vk.DeviceMemory,
+    format: vk.Format,
 }
 
 createVkImageView :: proc(
@@ -46,6 +47,8 @@ createVkImage :: proc(
 	usage: vk.ImageUsageFlags,
 	properties: vk.MemoryPropertyFlags,
 ) {
+    image.format = format
+
 	img_info := vk.ImageCreateInfo {
 		sType = .IMAGE_CREATE_INFO,
 		imageType = .D2,

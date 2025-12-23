@@ -8,7 +8,8 @@ g_mouse_button_state: [5]MouseState
 g_mouse_scroll: MouseScrollState
 
 processEvents :: proc() {
-    is_scrolling:= false
+	is_scrolling := false
+	window_resize := false
 	event: sdl.Event
 	for sdl.PollEvent(&event) {
 		#partial switch event.type {
@@ -23,12 +24,20 @@ processEvents :: proc() {
 		case .MOUSE_BUTTON_UP:
 			g_mouse_button_state[event.button.button - 1].button_pressed = false
 			g_mouse_button_state[event.button.button - 1].double_click = event.button.clicks < 2
-        case .MOUSE_WHEEL:
-            is_scrolling = true
+		case .MOUSE_WHEEL:
+			is_scrolling = true
 			g_mouse_scroll.position.x = event.wheel.x
 			g_mouse_scroll.position.y = event.wheel.y
+		case .WINDOW_RESIZED:
+			sdl.GetWindowSize(
+				g_window_context.handle,
+				&g_window_context.width,
+				&g_window_context.height,
+			)
+            window_resize = true
 		}
 	}
 
-    g_mouse_scroll.is_scrolling = is_scrolling
+	g_mouse_scroll.is_scrolling = is_scrolling
+    g_window_context.resized = window_resize
 }

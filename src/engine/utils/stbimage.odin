@@ -20,7 +20,7 @@ loadStbImage :: proc {
 loadStbImageByte :: proc(img_byte: []byte, allocator := context.allocator) -> StbImage {
 	img := StbImage{}
 
-	stbi.set_flip_vertically_on_load(1)
+	// stbi.set_flip_vertically_on_load(1)
 
 	img.data = stbi.load_from_memory(
 		raw_data(img_byte),

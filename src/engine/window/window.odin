@@ -15,7 +15,7 @@ WindowContext :: struct {
 	handle:        ^sdl.Window,
 	title:         string,
 	width, height: i32,
-	close:         bool,
+	close, resized: bool,
 }
 
 initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600) {
@@ -78,4 +78,8 @@ destroyWindow :: proc() {
 
 getWindowSize :: proc() -> linalg.Vector2f32 {
 	return linalg.Vector2f32{f32(g_window_context.width), f32(g_window_context.height)}
+}
+
+windowResized :: proc() -> bool {
+	return g_window_context.resized
 }

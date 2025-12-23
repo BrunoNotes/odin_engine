@@ -236,7 +236,13 @@ createVkTextureImage :: proc(
 	cmd := vkInitSingleTimeCmd()
 	defer vkDestroySingleTimeCmd(&cmd)
 
-	vkTransitionImage(cmd, tex_image.image.handle, .UNDEFINED, .TRANSFER_DST_OPTIMAL, mip_levels)
+	vkTransitionImage(
+		cmd,
+		tex_image.image.handle,
+		.UNDEFINED,
+		.TRANSFER_DST_OPTIMAL,
+		mip_levels = mip_levels,
+	)
 
 	copy_region := []vk.BufferImageCopy {
 		{

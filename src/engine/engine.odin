@@ -43,6 +43,10 @@ running :: proc() -> bool {
 		g_engine_context.running = false
 	}
 
+	if w_ctx.windowResized() {
+		vulkan.g_vulkan_context.swapchain.needs_rebuild = true
+	}
+
 	return g_engine_context.running
 }
 

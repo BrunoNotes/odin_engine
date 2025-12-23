@@ -16,7 +16,6 @@ VkGeometry :: struct {
 	push_constant:     VkGeometryPushConstant,
 	texture:           VkTexture,
 	pipeline:          VkPipeline,
-	// camera:            VkCamera,
 	loaded:            bool,
 }
 
@@ -121,7 +120,7 @@ destroyVkGeometry :: proc(geometry: ^VkGeometry) {
 	geometry.loaded = false
 }
 
-renderVkGeometry :: proc(geometry: ^VkGeometry, camera: ^VkCamera) {
+renderVkGeometry :: proc(geometry: ^VkGeometry, scene: ^VkScene) {
 	current_frame :=
 		g_vulkan_context.swapchain.frame_data[g_vulkan_context.swapchain.current_frame]
 	cmd := current_frame.cmd_buffer
@@ -154,13 +153,13 @@ renderVkGeometry :: proc(geometry: ^VkGeometry, camera: ^VkCamera) {
 	vk.CmdBindPipeline(cmd, .GRAPHICS, geometry.pipeline.handle)
 
 	{
-		size := camera.buffer.info.size
+		size := scene.buffer.info.size
 		staging_buffer := vkInitStagingBuffer(size)
 		defer destroyVkBuffer(&staging_buffer)
 
-		vkMapBufferMemory(&staging_buffer, &camera.uniform, size)
+		vkMapBufferMemory(&staging_buffer, &scene.uniform, size)
 
-		copyVkBuffer(staging_buffer.handle, camera.buffer.handle, 0, 0, size)
+		copyVkBuffer(staging_buffer.handle, scene.buffer.handle, 0, 0, size)
 	}
 
 	{
@@ -175,9 +174,9 @@ renderVkGeometry :: proc(geometry: ^VkGeometry, camera: ^VkCamera) {
 	}
 
 	vertex_buffer_info := vk.DescriptorBufferInfo {
-		buffer = camera.buffer.handle,
+		buffer = scene.buffer.handle,
 		offset = 0,
-		range  = size_of(camera.uniform),
+		range  = size_of(scene.uniform),
 	}
 
 	texture_buffer_info := vk.DescriptorBufferInfo {

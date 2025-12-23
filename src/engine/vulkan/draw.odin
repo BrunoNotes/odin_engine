@@ -13,13 +13,13 @@ VkRenderObject :: struct {
 
 initVkRenderObjectsFromGltfFile :: proc(
 	file_path: string,
-	camera: VkCamera,
+	scene: VkScene,
 	allocator := context.allocator,
 ) -> []VkRenderObject {
 	gltf := utils.loadGltf(file_path)
-    defer utils.destroyGltf(gltf)
+	defer utils.destroyGltf(gltf)
 
-	return initVkRenderObjectsFromGltf(gltf, camera, allocator)
+	return initVkRenderObjectsFromGltf(gltf, scene, allocator)
 }
 
 @(private = "file")
@@ -29,7 +29,7 @@ fragment_shader := #load("../../../shaders/bin/mesh.frag.spv")
 
 initVkRenderObjectsFromGltf :: proc(
 	gltf: utils.GltfData,
-	camera: VkCamera,
+	scene: VkScene,
 	allocator := context.allocator,
 ) -> []VkRenderObject {
 	vk_render_objects := make([dynamic]VkRenderObject, allocator)
@@ -85,12 +85,9 @@ initVkRenderObjectsFromGltf :: proc(
 						texture_id, _ := uuid.to_string(texture_image.id)
 						vk_geometry.texture.texture_images[texture_id] = texture_image
 
-						vk_geometry.texture.uniform.diffuse_color = prim.metallic_roughness.base_color
+						vk_geometry.texture.uniform.diffuse_color =
+							prim.metallic_roughness.base_color
 					}
-
-					// TODO: move this
-					vk_geometry.pipeline.wireframe = false
-					vk_geometry.pipeline.blending = .none
 
 					initVkGeometry(&vk_geometry, shaders)
 
