@@ -1,6 +1,7 @@
 package vulkan_context
 
 import w_ctx "../window"
+import "core:math/linalg"
 import vk "vendor:vulkan"
 
 beginVkRendering :: proc() {
@@ -116,6 +117,30 @@ beginVkRendering :: proc() {
 	}
 
 	vk.CmdBeginRendering(cmd, &rendering_info)
+
+	viewport := vk.Viewport {
+		x        = 0.0,
+		y        = f32(w_ctx.getWindowSize().y),
+		width    = f32(w_ctx.getWindowSize().x),
+		height   = -f32(w_ctx.getWindowSize().y),
+		minDepth = 0.0,
+		maxDepth = 1.0,
+	}
+
+	vk.CmdSetViewport(cmd, 0, 1, &viewport)
+
+	scissor := vk.Rect2D {
+		extent = vk.Extent2D {
+			width = u32(w_ctx.getWindowSize().x),
+			height = u32(w_ctx.getWindowSize().y),
+		},
+	}
+
+	vk.CmdSetScissor(cmd, 0, 1, &scissor)
+
+	vk.CmdSetCullMode(cmd, {.FRONT})
+	vk.CmdSetFrontFace(cmd, .CLOCKWISE)
+	vk.CmdSetPrimitiveTopology(cmd, .TRIANGLE_LIST)
 }
 
 endVkRendering :: proc() {
@@ -266,4 +291,8 @@ vkDestroySingleTimeCmd :: proc(cmd: ^vk.CommandBuffer) {
 		1,
 		cmd,
 	)
+}
+
+setBackgroundColor :: proc(color: linalg.Vector4f32) {
+	g_vulkan_context.background_color = color
 }

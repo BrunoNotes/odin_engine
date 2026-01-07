@@ -3,18 +3,18 @@ app_name := game_1
 default: run_debug
 
 run:
-	@odin run src
+	@odin run src -vet
 
 run_debug:
-	@odin run src -debug -vet
+	@odin run src -debug 
 
 build:
 	@-mkdir bin
-	@odin build src -build-mode:exe -out:bin/$(app_name)
+	@odin build src -vet -build-mode:exe -out:bin/$(app_name)
 
 build_debug:
 	@-mkdir bin
-	@odin build src -build-mode:exe -debug -out:bin/$(app_name)
+	@odin build src -debug -build-mode:exe -out:bin/$(app_name)
 
 shaders: build_compile_shaders
 	@./bin/compile_shaders

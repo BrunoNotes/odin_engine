@@ -1,8 +1,13 @@
 package vulkan_context
 
 import "../types"
-import "core:log"
+import "core:math/linalg"
 import vk "vendor:vulkan"
+
+@(private = "file")
+vertex_shader := #load("../../../shaders/bin/mesh.vert.spv")
+@(private = "file")
+fragment_shader := #load("../../../shaders/bin/mesh.frag.spv")
 
 VkPipelineStageAccess :: struct {
 	stage:  vk.PipelineStageFlags2,
@@ -23,25 +28,23 @@ VkPipeline :: struct {
 initPipeline :: proc(
 	pipeline: ^VkPipeline,
 	shader_stages: VkShaderStages,
-	push_constants_range: []vk.PushConstantRange = nil,
-	descriptors_set_layout: []vk.DescriptorSetLayout = nil,
-	attribute_descriptions: []vk.VertexInputAttributeDescription = nil,
+	push_constants_range: []vk.PushConstantRange = {},
+	descriptors_set_layout: []vk.DescriptorSetLayout = {},
+	attribute_descriptions: []vk.VertexInputAttributeDescription = {},
 	wireframe: bool = false,
 	blending: VkPipelineBlending = .none,
 	depth_write: b32 = true,
 ) {
-	log.infof("Vulkan: init pipeline")
-
 	layout_info := vk.PipelineLayoutCreateInfo {
 		sType = .PIPELINE_LAYOUT_CREATE_INFO,
 	}
 
-	if push_constants_range != nil {
+	if len(push_constants_range) > 0 {
 		layout_info.pushConstantRangeCount = u32(len(push_constants_range))
 		layout_info.pPushConstantRanges = raw_data(push_constants_range)
 	}
 
-	if descriptors_set_layout != nil {
+	if len(descriptors_set_layout) > 0 {
 		layout_info.setLayoutCount = u32(len(descriptors_set_layout))
 		layout_info.pSetLayouts = raw_data(descriptors_set_layout)
 	}
@@ -67,7 +70,7 @@ initPipeline :: proc(
 		pVertexBindingDescriptions    = &binding_description,
 	}
 
-	if attribute_descriptions != nil {
+	if len(attribute_descriptions) > 0 {
 		vertex_input.vertexAttributeDescriptionCount = u32(len(attribute_descriptions))
 		vertex_input.pVertexAttributeDescriptions = raw_data(attribute_descriptions)
 	}
@@ -209,8 +212,6 @@ initPipeline :: proc(
 }
 
 destroyVkPipeline :: proc(pipeline: ^VkPipeline) {
-	log.infof("Vulkan: destroy pipeline")
-
 	vk.DestroyPipeline(
 		g_vulkan_context.logic_device.handle,
 		pipeline.handle,
@@ -221,5 +222,69 @@ destroyVkPipeline :: proc(pipeline: ^VkPipeline) {
 		g_vulkan_context.logic_device.handle,
 		pipeline.layout,
 		g_vulkan_context.vk_allocator,
+	)
+}
+
+initVkMeshRenderObjectPipeline :: proc(
+	render_object: ^VkRenderObject,
+	scene: VkScene,
+	allocator := context.allocator,
+) {
+	shaders := []VkShaderStageType {
+		{shader = vertex_shader, stage = .VERTEX},
+		{shader = fragment_shader, stage = .FRAGMENT},
+	}
+
+	shader_stages: VkShaderStages
+	initVkShaderStage(&shader_stages, shaders, allocator)
+	defer destroyVkShaderStage(shader_stages)
+
+	push_constant_range := []vk.PushConstantRange {
+		vk.PushConstantRange {
+			stageFlags = {.VERTEX},
+			offset = size_of(linalg.Matrix4f32) * 0,
+			size = size_of(linalg.Matrix4f32) * 2,
+		},
+	}
+
+	attribute_descriptions := []vk.VertexInputAttributeDescription {
+		{
+			location = 0,
+			binding = 0,
+			format = .R32G32B32_SFLOAT,
+			offset = u32(offset_of(types.Vertex, position)),
+		},
+		{
+			location = 1,
+			binding = 0,
+			format = .R32G32_SFLOAT,
+			offset = u32(offset_of(types.Vertex, uv)),
+		},
+		{
+			location = 2,
+			binding = 0,
+			format = .R32G32B32A32_SFLOAT,
+			offset = u32(offset_of(types.Vertex, color)),
+		},
+		{
+			location = 3,
+			binding = 0,
+			format = .R32G32B32_SFLOAT,
+			offset = u32(offset_of(types.Vertex, normal)),
+		},
+	}
+
+	descriptors_set_layouts := []vk.DescriptorSetLayout {
+		scene.descriptor.set_layout,
+		render_object.texture.descriptor.set_layout,
+	}
+
+	initPipeline(
+		&render_object.pipeline,
+		shader_stages,
+		push_constant_range,
+		descriptors_set_layouts[:],
+		attribute_descriptions,
+		// wireframe = true,
 	)
 }

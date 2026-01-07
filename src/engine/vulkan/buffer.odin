@@ -8,7 +8,6 @@ VkBuffer :: struct {
 	memory:         vk.DeviceMemory,
 	info:           vk.BufferCreateInfo,
 	device_address: vk.DeviceAddress,
-	loaded:         bool,
 }
 
 initVkBuffer :: proc(
@@ -125,8 +124,6 @@ allocateVkBuffer :: proc(
 	vkMapBufferMemory(&staging_buffer, items, size)
 
 	copyVkBuffer(staging_buffer.handle, buffer.handle, 0, 0, size)
-
-	buffer.loaded = true
 
 	return buffer
 }

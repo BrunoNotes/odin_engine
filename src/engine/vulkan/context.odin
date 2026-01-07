@@ -29,13 +29,11 @@ VkContext :: struct {
 	instance:         VkInstance,
 	surface:          vk.SurfaceKHR,
 	physical_device:  VkPhysicalDevice,
-	logic_device:    VkLogicDevice,
-	swapchain:       VkSwapChain,
+	logic_device:     VkLogicDevice,
+	swapchain:        VkSwapChain,
 }
 
 initVkContext :: proc() {
-	log.infof("Init VkContext")
-
 	g_vulkan_context.arena = base.initArenaAllocator()
 	g_vulkan_context.arena_allocator = vmem.arena_allocator(&g_vulkan_context.arena)
 
@@ -56,18 +54,16 @@ initVkContext :: proc() {
 		log.panicf("Vulkan: failed to create surface")
 	}
 
-    initVkPhysicalDevice()
-    initVkLogicDevice()
-    initVkSwapChain()
+	initVkPhysicalDevice()
+	initVkLogicDevice()
+	initVkSwapChain()
 }
 
 destroyVkContext :: proc() {
-	log.infof("Destroy VkContext")
+	vkCheck(vk.DeviceWaitIdle(g_vulkan_context.logic_device.handle))
 
-    vkCheck(vk.DeviceWaitIdle(g_vulkan_context.logic_device.handle))
-
-    destroyVkSwapChain()
-    destroyVkLogicDevice()
+	destroyVkSwapChain()
+	destroyVkLogicDevice()
 	vk.DestroySurfaceKHR(
 		g_vulkan_context.instance.handle,
 		g_vulkan_context.surface,

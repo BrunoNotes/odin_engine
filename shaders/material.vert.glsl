@@ -21,7 +21,7 @@ layout(set = 1, binding = 0) uniform gltf_material_data{
 } material_data;
 
 layout(push_constant) uniform push_constants {
-    mat4 model_matrix;
+    mat4 transform_matrix;
 } p_constants;
 
 
@@ -32,8 +32,8 @@ layout(location = 2) out vec3 out_normal;
 
 void main()
 {
-    gl_Position = u_scene.projection * u_scene.view * p_constants.model_matrix * vec4(in_position, 1.0);
+    gl_Position = u_scene.projection * u_scene.view * p_constants.transform_matrix * vec4(in_position, 1.0);
     out_uv = in_uv;
     out_color = in_color * material_data.color_factors;
-    out_normal = (p_constants.model_matrix * vec4(in_normal, 0.f)).xyz;
+    out_normal = (p_constants.transform_matrix * vec4(in_normal, 0.f)).xyz;
 }

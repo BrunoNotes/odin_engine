@@ -11,8 +11,6 @@ VkPhysicalDevice :: struct {
 
 
 initVkPhysicalDevice :: proc() {
-	log.infof("Vulkan: init PhysicalDevice")
-
 	scorePhysicalDevice :: proc(
 		device: vk.PhysicalDevice,
 		surface: vk.SurfaceKHR,
@@ -144,7 +142,8 @@ initVkPhysicalDevice :: proc() {
 
 	best_device_score := -1
 	for device in physical_devices {
-		if score := scorePhysicalDevice(device, g_vulkan_context.surface); score > best_device_score {
+		if score := scorePhysicalDevice(device, g_vulkan_context.surface);
+		   score > best_device_score {
 			g_vulkan_context.physical_device.handle = device
 			best_device_score = score
 		}

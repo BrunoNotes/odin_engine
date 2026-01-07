@@ -1,7 +1,6 @@
 package vulkan_context
 
 import w_ctx "../window"
-import "core:log"
 import vk "vendor:vulkan"
 
 VkSwapChain :: struct {
@@ -44,8 +43,6 @@ VkFrameData :: struct {
 
 
 initVkSwapChain :: proc() {
-	log.infof("Vulkan: init SwapChain")
-
 	swapchain_support := vkGetSwapChainSupport(
 		g_vulkan_context.physical_device.handle,
 		g_vulkan_context.surface,
@@ -269,8 +266,6 @@ initVkSwapChain :: proc() {
 }
 
 destroyVkSwapChain :: proc() {
-	log.infof("Vulkan: destroy SwapChain")
-
 	for &frame in g_vulkan_context.swapchain.frame_data {
 		vk.FreeCommandBuffers(
 			g_vulkan_context.logic_device.handle,
@@ -335,4 +330,8 @@ destroyVkSwapChain :: proc() {
 		g_vulkan_context.swapchain.handle,
 		g_vulkan_context.vk_allocator,
 	)
+}
+
+vkGetCurrentFrame :: proc() -> VkFrameData {
+	return g_vulkan_context.swapchain.frame_data[g_vulkan_context.swapchain.current_frame]
 }

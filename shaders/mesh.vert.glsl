@@ -11,7 +11,7 @@ layout(set = 0, binding = 0) uniform uniform_object {
 } u_scene;
 
 layout(push_constant) uniform push_constants {
-    mat4 model_matrix;
+    mat4 transform_matrix;
 } p_constants;
 
 layout(location = 0) out vec2 out_uv;
@@ -19,7 +19,7 @@ layout(location = 1) out vec4 out_color;
 
 void main()
 {
-    gl_Position = u_scene.projection * u_scene.view * p_constants.model_matrix * vec4(in_position, 1.0);
+    gl_Position = u_scene.projection * u_scene.view * p_constants.transform_matrix * vec4(in_position, 1.0);
     out_uv = in_uv;
     out_color = in_color;
 }

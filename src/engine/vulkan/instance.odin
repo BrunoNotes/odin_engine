@@ -1,7 +1,6 @@
 package vulkan_context
 
 import sdl "../../../vendor/sdl3"
-import "core:log"
 import vk "vendor:vulkan"
 
 VkInstance :: struct {
@@ -11,8 +10,6 @@ VkInstance :: struct {
 }
 
 initVkInstance :: proc() {
-	log.infof("Vulkan: init Instance")
-
 	vk.load_proc_addresses_global(rawptr(sdl.Vulkan_GetVkGetInstanceProcAddr()))
 	assert(vk.CreateInstance != nil, "vulkan: function pointers not loaded")
 
@@ -62,7 +59,10 @@ initVkInstance :: proc() {
 
 	when ODIN_OS == .Darwin {
 		create_info.flags |= {.ENUMERATE_PORTABILITY_KHR}
-		if vkExtensionIsAvailable(vk.KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME, available_ext[:]) {
+		if vkExtensionIsAvailable(
+			vk.KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+			available_ext[:],
+		) {
 			append(&extensions, vk.KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)
 		}
 	}
@@ -132,8 +132,6 @@ initVkInstance :: proc() {
 }
 
 destroyVkInstance :: proc() {
-	log.infof("Vulkan: destroy Instance")
-
 	when ENABLE_VALIDATION_LAYERS {
 		vk.DestroyDebugUtilsMessengerEXT(
 			g_vulkan_context.instance.handle,

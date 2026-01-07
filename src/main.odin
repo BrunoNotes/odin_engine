@@ -5,7 +5,6 @@ import eng_ctx "./engine"
 import "./engine/base"
 import "./engine/types"
 import "./engine/ui"
-// import "./engine/utils"
 import "./engine/vulkan"
 import w_ctx "./engine/window"
 import "core:crypto"
@@ -24,34 +23,31 @@ main :: proc() {
 	eng_ctx.initEngine()
 	defer eng_ctx.destroyEngine()
 
-	// cornflower blue
-	vulkan.g_vulkan_context.background_color = {0.392, 0.584, 0.929, 1.0}
-
 	// needs to be created before the mesh
 	vk_scene: vulkan.VkScene
-	vk_scene.uniform.ambient_color = 1
 	vulkan.initVkScene(&vk_scene)
 	defer vulkan.destroyVkScene(&vk_scene)
 
+	geometries := make([dynamic]vulkan.VkGeometry)
+	defer vulkan.destroyVkGeometrySlice(geometries[:])
 
-	// utils.loadGltf("/home/bruno/tmp/glTF-Sample-Models/2.0/Lantern/glTF-Binary/Lantern.glb")
-	// utils.loadGltf("assets/models/BoxTextured.glb")
-
-	vk_render_objects := vulkan.initVkRenderObjectsFromGltfFile(
+	sponza := vulkan.initVkRenderObjectsFromGltfFile(
 		"/home/bruno/Downloads/Untitled.glb",
-		// "/home/bruno/tmp/glTF-Sample-Models/2.0/Lantern/glTF-Binary/Lantern.glb",
-		// "assets/models/BoxTextured.glb",
-		// "/home/bruno/tmp/glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf",
-		// "/home/bruno/tmp/glTF-Sample-Models/2.0/Suzanne/glTF/Suzanne.gltf",
 		vk_scene,
 	)
-	defer vulkan.destroyVkRenderObjectsSlice(&vk_render_objects)
+	append(&geometries, ..sponza)
+
+	box := vulkan.initVkRenderObjectsFromGltfFile("assets/models/BoxTextured.glb", vk_scene)
+	append(&geometries, ..box)
+
+	// box2 := vulkan.initVkRenderObjectsFromGltfFile("assets/models/BoxTextured.glb", vk_scene)
+	// append(&geometries, ..box2)
 
 	// ----- Camera -----
 
 	camera: types.Camera
 	camera.fov = 70
-	camera.translation = {0, 0, 2}
+	camera.translation = {0, 0, 0}
 	camera.projection = .perspective
 
 	// ----- UI -----
@@ -132,23 +128,18 @@ main :: proc() {
 		}
 
 		// ----- draw -----
-		for &render_object in vk_render_objects {
-			{
-				rotation, translation := eng_ctx.geometryController(
-					render_object.geometry.rotation,
-					render_object.geometry.translation,
-					eng_ctx.deltaTime(),
-				)
-				render_object.geometry.rotation = rotation
-				render_object.geometry.translation = translation
-			}
+		vulkan.vkDrawScene(&vk_scene)
 
+		for &geometry in geometries {
+			geometry.rotation, geometry.translation = eng_ctx.geometryController(
+				geometry.rotation,
+				geometry.translation,
+				eng_ctx.deltaTime(),
+			)
 
-			for &vk_geometry in render_object.vk_geometry {
-				types.updateGeometryProjection(&render_object.geometry)
-				vk_geometry.push_constant.model_matrix = render_object.geometry.model_matrix
-				vulkan.renderVkGeometry(&vk_geometry, &vk_scene)
-			}
+			vulkan.updateVkGeometryProjection(&geometry)
+
+			vulkan.vkDrawGeometry(geometry, &vk_scene)
 		}
 
 		vulkan.endVkRendering()

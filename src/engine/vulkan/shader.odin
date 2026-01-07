@@ -1,6 +1,5 @@
 package vulkan_context
 
-import "core:log"
 import "core:slice"
 import vk "vendor:vulkan"
 
@@ -20,7 +19,6 @@ initVkShaderStage :: proc(
 	shader_stage_type: []VkShaderStageType,
 	allocator := context.allocator,
 ) {
-	log.infof("Vulkan: init shader stage")
 	shader_stages.modules = make([]vk.ShaderModule, len(shader_stage_type), allocator)
 	shader_stages.stage_infos = make(
 		[]vk.PipelineShaderStageCreateInfo,
@@ -66,7 +64,6 @@ initVkShaderStage :: proc(
 }
 
 destroyVkShaderStage :: proc(shader_stages: VkShaderStages) {
-	log.infof("Vulkan: destoy shader stage")
 	for module in shader_stages.modules {
 		vk.DestroyShaderModule(
 			g_vulkan_context.logic_device.handle,

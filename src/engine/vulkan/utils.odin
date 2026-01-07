@@ -258,7 +258,6 @@ vkTransitionImage :: proc(
 
 	aspectMask: vk.ImageAspectFlags
 	if new_layout == .DEPTH_STENCIL_ATTACHMENT_OPTIMAL {
-		// TODO: check stencil
 		if format == .D32_SFLOAT_S8_UINT || format == .D24_UNORM_S8_UINT {
 			aspectMask = {.DEPTH, .STENCIL}
 		} else {

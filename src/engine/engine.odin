@@ -1,8 +1,8 @@
 package engine_context
 
+import "./types/color"
 import "./vulkan"
 import w_ctx "./window"
-import "core:log"
 import "core:time"
 
 g_engine_context: EngineContext
@@ -16,17 +16,15 @@ EngineContext :: struct {
 }
 
 initEngine :: proc() {
-	log.infof("Init engine")
-
 	defer g_engine_context.running = true
 
 	w_ctx.initWindow()
 	vulkan.initVkContext()
+
+	vulkan.setBackgroundColor(color.CORNFLOWER_BLUE)
 }
 
 destroyEngine :: proc() {
-	log.infof("Destroy engine")
-
 	vulkan.destroyVkContext()
 	w_ctx.destroyWindow()
 }

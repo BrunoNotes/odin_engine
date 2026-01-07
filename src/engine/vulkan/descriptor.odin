@@ -1,6 +1,5 @@
 package vulkan_context
 
-import "core:log"
 import vk "vendor:vulkan"
 
 VkDescriptor :: struct {
@@ -15,8 +14,6 @@ initVkDescriptor :: proc(
 	pool_size: []vk.DescriptorPoolSize,
 	layout_binding: []vk.DescriptorSetLayoutBinding,
 ) {
-	log.infof("Vulkan: init Descriptor")
-
 	pool_info := vk.DescriptorPoolCreateInfo {
 		sType         = .DESCRIPTOR_POOL_CREATE_INFO,
 		flags         = {
@@ -74,8 +71,6 @@ initVkDescriptor :: proc(
 }
 
 destroyVkDescriptor :: proc(descriptor: ^VkDescriptor) {
-	log.infof("Vulkan: destroy Descriptor")
-
 	vk.DestroyDescriptorSetLayout(
 		g_vulkan_context.logic_device.handle,
 		descriptor.set_layout,

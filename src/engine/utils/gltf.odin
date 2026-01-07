@@ -70,7 +70,6 @@ loadGltfFile :: proc(file_path: string, allocator := context.allocator) -> GltfD
 }
 
 loadGltfByte :: proc(byte: []byte, allocator := context.allocator) -> GltfData {
-	// TODO: check why it does not work
 	options := cgltf.options{}
 	data: ^cgltf.data
 	result: cgltf.result
@@ -354,8 +353,6 @@ processGltfMesh :: proc(
 				tmp_gltf_primitive.metallic_roughness.has_attribute = true
 
 				texture := prim.material.pbr_metallic_roughness.base_color_texture.texture
-
-                fmt.println(prim.material.pbr_metallic_roughness)
 
 				if texture.image_.buffer_view != nil {
 					start := texture.image_.buffer_view.offset

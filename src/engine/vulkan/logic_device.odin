@@ -10,8 +10,6 @@ VkLogicDevice :: struct {
 }
 
 initVkLogicDevice :: proc() {
-	log.infof("Vulkan: init LogicDevice")
-
 	queues := [?]VkQueueInfo{vkGetQueueInfo(g_vulkan_context.physical_device.handle, .GRAPHICS)}
 
 	g_vulkan_context.logic_device.queues = queues[:]
@@ -162,7 +160,5 @@ initVkLogicDevice :: proc() {
 }
 
 destroyVkLogicDevice :: proc() {
-	log.infof("Vulkan: destroy LogicDevice")
-
 	vk.DestroyDevice(g_vulkan_context.logic_device.handle, g_vulkan_context.vk_allocator)
 }

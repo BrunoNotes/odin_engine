@@ -1,7 +1,6 @@
 package vulkan_context
 
 import "../utils"
-import "core:encoding/uuid"
 import "core:log"
 import "core:math"
 import "core:math/linalg"
@@ -11,11 +10,10 @@ BLANK_TEXTURE_KEY := "_blank"
 BLANK_PIXELS := [4]u8{255, 255, 255, 255}
 
 VkTexture :: struct {
-	current_image:  string,
-	uniform:        VkTextureUniform,
-	texture_images: map[string]VkTextureImage,
-	descriptor:     VkDescriptor,
-	buffer:         VkBuffer,
+	uniform:       VkTextureUniform,
+	texture_image: VkTextureImage,
+	buffer:        VkBuffer,
+	descriptor:    VkDescriptor,
 }
 
 VkTextureUniform :: struct {
@@ -23,7 +21,6 @@ VkTextureUniform :: struct {
 }
 
 VkTextureImage :: struct {
-	id:                      uuid.Identifier,
 	image:                   VkImage,
 	sampler:                 vk.Sampler,
 	descriptor_binding:      u32,
@@ -35,84 +32,56 @@ VkTextureImageType :: enum {
 	image,
 }
 
-initVkTexture :: proc(texture: ^VkTexture, allocator := context.allocator) {
-	log.info("Vulkan: init texture")
+initVkTexture :: proc(
+	image: VkTextureImage,
+	uniform: VkTextureUniform,
+	allocator := context.allocator,
+) -> VkTexture {
+	texture: VkTexture
 
-	if texture.uniform.diffuse_color == 0 {
-		texture.uniform.diffuse_color = 1
+	texture.texture_image = image
+	texture.uniform = uniform
+
+	texture.buffer = allocateVkBuffer(
+		vk.DeviceSize(size_of(texture.uniform)),
+		&texture.uniform,
+		{.UNIFORM_BUFFER, .TRANSFER_DST},
+	)
+
+	descriptor_pool_size := []vk.DescriptorPoolSize {
+		{type = .UNIFORM_BUFFER, descriptorCount = 1},
+		{type = .COMBINED_IMAGE_SAMPLER, descriptorCount = 1},
 	}
 
-	if len(texture.texture_images) <= 0 {
-		texture.texture_images = make(map[string]VkTextureImage, 1, allocator)
-
-		tex_img: VkTextureImage
-		initVkTextureImage(&tex_img, type = .blank)
-
-		texture.texture_images[BLANK_TEXTURE_KEY] = tex_img
-	}
-
-	texture_descriptor_pool_size := []vk.DescriptorPoolSize {
+	descriptor_layout_binding := []vk.DescriptorSetLayoutBinding {
 		{
-			type = .UNIFORM_BUFFER,
-			descriptorCount = len(texture.texture_images) <= 0 ? 1 : u32(len(texture.texture_images)),
-		},
-		{
-			type = .COMBINED_IMAGE_SAMPLER,
-			descriptorCount = len(texture.texture_images) <= 0 ? 1 : u32(len(texture.texture_images)),
-		},
-	}
-
-	texture_descriptor_layout_binding: [dynamic]vk.DescriptorSetLayoutBinding
-	defer delete(texture_descriptor_layout_binding)
-
-	append(
-		&texture_descriptor_layout_binding,
-		vk.DescriptorSetLayoutBinding {
 			binding = 0,
 			descriptorType = .UNIFORM_BUFFER,
 			descriptorCount = 1,
 			stageFlags = {.FRAGMENT},
 		},
-	)
-
-	// for i in 0 ..< len(texture.texture_images) {
-	binding_idx := 0
-	for _, &value in texture.texture_images {
-		layout_binding := vk.DescriptorSetLayoutBinding {
-			binding         = u32(binding_idx + 1),
-			descriptorType  = .COMBINED_IMAGE_SAMPLER,
+		{
+			binding = 1,
+			descriptorType = .COMBINED_IMAGE_SAMPLER,
 			descriptorCount = 1,
-			stageFlags      = {.FRAGMENT},
-		}
-
-		append(&texture_descriptor_layout_binding, layout_binding)
-		value.descriptor_binding = layout_binding.binding
-		// texture.texture_images[key].descriptor_binding = layout_binding.binding
-		binding_idx += 1
+			stageFlags = {.FRAGMENT},
+		},
 	}
 
 	initVkDescriptor(
 		&texture.descriptor,
 		u32(len(g_vulkan_context.swapchain.images)),
-		texture_descriptor_pool_size[:],
-		texture_descriptor_layout_binding[:],
+		descriptor_pool_size[:],
+		descriptor_layout_binding[:],
 	)
 
-	initVkBuffer(
-		&texture.buffer,
-		vk.DeviceSize(size_of(texture.uniform)),
-		{.TRANSFER_DST, .UNIFORM_BUFFER},
-		{.DEVICE_LOCAL},
-	)
+	return texture
 }
 
 destroyVkTexture :: proc(texture: ^VkTexture) {
-	log.info("Vulkan: destroy texture")
-	for _, &texture in texture.texture_images {
-		destroyVkTextureImage(&texture)
-	}
-	destroyVkBuffer(&texture.buffer)
 	destroyVkDescriptor(&texture.descriptor)
+	destroyVkTextureImage(&texture.texture_image)
+	destroyVkBuffer(&texture.buffer)
 }
 
 createVkTextureImageFromImage :: proc {
@@ -156,8 +125,6 @@ initVkTextureImage :: proc(
 	img_data: [^]byte = nil,
 	type: VkTextureImageType = VkTextureImageType.image,
 ) {
-	tex_image.id = uuid.generate_v7()
-
 	switch type {
 	case .image:
 		assert(img_width > 0, "Vulkan: image width must be grater than 0")
@@ -177,7 +144,6 @@ initVkTextureImage :: proc(
 }
 
 destroyVkTextureImage :: proc(tex_image: ^VkTextureImage) {
-	log.infof("vulkan: destroy texture image")
 	// vk.DeviceWaitIdle(ctx.logic_device.handle)
 	vk.DestroySampler(
 		g_vulkan_context.logic_device.handle,

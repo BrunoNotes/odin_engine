@@ -12,15 +12,13 @@ default_ctx: runtime.Context
 g_window_context: WindowContext
 
 WindowContext :: struct {
-	handle:        ^sdl.Window,
-	title:         string,
-	width, height: i32,
+	handle:         ^sdl.Window,
+	title:          string,
+	width, height:  i32,
 	close, resized: bool,
 }
 
 initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600) {
-	log.infof("Init window")
-
 	// sdl.SetLogPriorities(ODIN_DEBUG ? .VERBOSE : .INFO)
 	// sdl.SetLogOutputFunction(
 	// 	proc "c" (
@@ -71,8 +69,6 @@ initWindow :: proc(title: string = "Window", width: i32 = 800, height: i32 = 600
 }
 
 destroyWindow :: proc() {
-	log.infof("Destroy window")
-
 	sdl.DestroyWindow(g_window_context.handle)
 }
 
